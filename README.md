@@ -33,7 +33,7 @@ Inget körs lokalt och inga Wrangler-kommandon behövs – Worker:n skapar sina 
 nätverken (ta raden med vlan 30 som GUEST_NETWORK_ID) och konsolens publika IP (FIBER_IP_PREFIX = början på fiberns IP) via din API-nyckel.
 Står det 403 under Cloud Connector är nyckeln från fel konto; 408 betyder att konsolen är offline eller har UniFi OS < 5.0.3.
 
-**3. Fyll i `wrangler.toml`** på GitHub (penn-ikonen) under `[vars]` och committa till `main`. Cloudflare bygger om.
+**3. Fyll i `wrangler.toml`** på GitHub (penn-ikonen) under `[vars]` och committa till `main`. HOST_ID har formen `<hex>:<nummer>` – ta med suffixet efter kolon. Cloudflare bygger om.
 När NET_SITE_ID är satt stängs `/setup` (svarar 404) och cron börjar polla var 5:e minut. Första körningen backfyller 30 dagars WAN-historik.
 
 Ändrar du en tröskel i `wrangler.toml` räcker det att committa igen. OBS: `wrangler deploy` skriver över *variabler* med dem i `wrangler.toml`,

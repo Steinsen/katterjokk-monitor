@@ -24,9 +24,25 @@ async function sm<T = any>(env: Env, path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+/**
+ * Host-id:t i Site Manager har formen "<hex>:<nummer>". Saknas suffixet (lätt att tappa vid kopiering)
+ * slår vi upp det fulla id:t från /hosts en gång per isolat.
+ */
+let resolvedHostId: string | undefined;
+export async function hostId(env: Env): Promise<string> {
+  if (env.HOST_ID.includes(":")) return env.HOST_ID;
+  if (resolvedHostId) return resolvedHostId;
+  const hosts = await sm(env, "/hosts");
+  const match = (hosts.data ?? []).find((h: any) => String(h.id).startsWith(env.HOST_ID)) ?? hosts.data?.[0];
+  if (!match?.id) throw new Error(`HOST_ID ${env.HOST_ID} finns inte i /hosts`);
+  console.warn(`HOST_ID saknar suffix – använder ${match.id} (rätta i wrangler.toml)`);
+  resolvedHostId = String(match.id);
+  return resolvedHostId;
+}
+
 /** Network Integration API på konsolen, via Cloud Connector. */
-const net = <T = any>(env: Env, path: string) =>
-  sm<T>(env, `/connector/consoles/${env.HOST_ID}/network/integration/v1${path}`);
+const net = async <T = any>(env: Env, path: string) =>
+  sm<T>(env, `/connector/consoles/${await hostId(env)}/network/integration/v1${path}`);
 
 async function allPages<T>(env: Env, path: string): Promise<T[]> {
   const out: T[] = [];
@@ -84,7 +100,7 @@ export async function collect(env: Env, nowMs = Date.now()): Promise<Snapshot> {
     allPages<any>(env, `/sites/${site}/devices`),
     allPages<any>(env, `/sites/${site}/clients`),
     env.GUEST_NETWORK_ID ? net(env, `/sites/${site}/networks/${env.GUEST_NETWORK_ID}`) : Promise.reject(new Error("no GUEST_NETWORK_ID")),
-    sm(env, `/hosts/${env.HOST_ID}`),
+    hostId(env).then((id) => sm(env, `/hosts/${id}`)),
   ]);
 
   for (const r of [sitesR, ispR, devicesR, clientsR]) {
@@ -240,7 +256,7 @@ export async function debugCalls(env: Env) {
     config: { HOST_ID: env.HOST_ID, SM_SITE_ID: env.SM_SITE_ID, NET_SITE_ID: site, GUEST_NETWORK_ID: env.GUEST_NETWORK_ID },
     calls: [
       await probe("GET /hosts", () => sm(env, "/hosts"), (r) => r.data?.map((h: any) => ({ id: h.id, ip: h.ipAddress, type: h.type }))),
-      await probe(`GET /hosts/${env.HOST_ID}`, () => sm(env, `/hosts/${env.HOST_ID}`), (r) => ({ id: r.data?.id, ip: r.data?.ipAddress })),
+      await probe("GET /hosts/{HOST_ID}", async () => sm(env, `/hosts/${await hostId(env)}`), (r) => ({ id: r.data?.id, ip: r.data?.ipAddress })),
       await probe("GET /sites", () => sm(env, "/sites"), (r) => r.data?.map((s: any) => ({ siteId: s.siteId, hostId: s.hostId, wifiClient: s.statistics?.counts?.wifiClient }))),
       await probe("connector /sites", () => net(env, "/sites"), (r) => r.data?.map((s: any) => ({ id: s.id, name: s.name }))),
       await probe("connector /devices", () => net(env, `/sites/${site}/devices?limit=100`), (r) => ({ count: r.data?.length, sample: r.data?.slice(0, 3).map((d: any) => ({ model: d.model, name: d.name, state: d.state })) })),
