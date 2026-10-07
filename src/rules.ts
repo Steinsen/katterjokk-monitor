@@ -4,6 +4,9 @@
  *  evaluate(snapshot, thresholds)  -> vilka (regel, subjekt) som bryter just nu
  *  step(states, violations, ts)    -> nya tillstånd + de byten (open/resolved) som ska notifieras
  *
+ * OBS: UniFi:s isp-metrics rapporterar WAN1 (inte aktiv WAN) och download_kbps/upload_kbps är den
+ * abonnerade hastigheten, inte trafik. Därför finns ingen trafikbaserad regel (f.d. wan_silent).
+ *
  * Ett larm öppnas när villkoret brutits `required` körningar i rad, och stängs
  * när det varit ok lika många körningar i rad. Däremellan: tyst.
  */
@@ -125,19 +128,6 @@ export const RULES: RuleDef[] = [
       const top = online.reduce((m, a) => (a.clients > m.clients ? a : m));
       return top.clients >= t.skewMinClients && top.clients > t.skewFactor * Math.max(median, 1)
         ? [v("ap_skew", "warning", top.ap_name, `AP ${top.ap_name} har ${top.clients} klienter, median ${median}`)]
-        : [];
-    },
-  },
-  {
-    rule: "wan_silent",
-    severity: "warning",
-    required: 6,
-    check: ({ sample: s }, t) => {
-      if (!isNum(s.clients_total) || !isNum(s.wan_down_kbps) || !isNum(s.wan_up_kbps)) return [];
-      const kbps = s.wan_down_kbps + s.wan_up_kbps;
-      const up = !isNum(s.wan_uptime) || s.wan_uptime >= 99;
-      return s.clients_total >= t.silentMinClients && kbps < t.silentMaxKbps && up
-        ? [v("wan_silent", "warning", "wan", `${s.clients_total} klienter men bara ${kbps} kbps WAN-trafik – fibern rapporteras uppe`)]
         : [];
     },
   },

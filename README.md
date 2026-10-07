@@ -70,12 +70,14 @@ Trösklar ligger i `wrangler.toml` `[vars]`.
 | ap_retries | TX retries > 20 % på något band | 3 | warning |
 | dhcp_pool | anslutna i guest-subnätet > 80 % av poolen | 2 | warning |
 | ap_skew | en AP har > 2,5× medianen och ≥ 25 klienter | 3 | warning |
-| wan_silent | ≥ 20 klienter men < 500 kbps WAN-trafik, fiber uppe | 6 | warning |
 
 ## Vad som inte finns i API:t
 
-Channel utilization, WiFi Experience, signal/RSSI per klient, faktiska DHCP-leases och verklig throughput
-exponeras inte av UniFis officiella API:er. Dashboarden visar dem som saknade, inte som noll. Se designdokumentet för V2 (lokal probe).
+Channel utilization, WiFi Experience, signal/RSSI per klient, faktiska DHCP-leases, WAN-trafik och verklig throughput
+exponeras inte av UniFis officiella API:er. Verifierat 2026-10-07 mot rådata: `isp-metrics` rapporterar **WAN1** oavsett
+vilken WAN som är aktiv, och `download_kbps`/`upload_kbps` är den abonnerade hastigheten (konstant), inte trafik.
+Med fibern på WAN2 mäter latency/loss alltså 5G-backupen – byt WAN-tilldelning i UDM-SE (fiber → WAN1) om du vill
+att metriken ska gälla fibern. Aktiv väg avgörs i stället via konsolens publika IP (`FIBER_IP_PREFIX`). Dashboarden visar dem som saknade, inte som noll. Se designdokumentet för V2 (lokal probe).
 
 ## Utveckling
 

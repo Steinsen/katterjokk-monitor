@@ -67,7 +67,10 @@ export default {
       if (url.pathname.startsWith("/api/")) await db.ensureSchema(env.DB);
       switch (url.pathname) {
         case "/api/status":
-          return json(await db.latest(env.DB));
+          return json({
+            ...(await db.latest(env.DB)),
+            config: { fiberIpPrefix: env.FIBER_IP_PREFIX ?? "", ispMetricsWan: env.ISP_METRICS_WAN ?? "WAN1" },
+          });
         case "/api/series": {
           const r = url.searchParams.get("range");
           const range: db.Range = r === "1h" || r === "7d" ? r : "24h";

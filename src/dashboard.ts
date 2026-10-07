@@ -53,7 +53,7 @@ export const DASHBOARD_HTML = /* html */ `<!doctype html>
   <section class="card" style="margin-top:12px">
     <h2>Accesspunkter</h2>
     <div style="overflow-x:auto"><table id="aps"></table></div>
-    <div class="muted" style="font-size:12px;margin-top:8px">Channel utilization, WiFi Experience och signal per klient finns inte i UniFis officiella API och visas därför inte.</div>
+    <div class="muted" style="font-size:12px;margin-top:8px">Channel utilization, WiFi Experience, signal per klient och WAN-trafik finns inte i UniFis officiella API och visas därför inte. UniFi:s ISP-metrik följer WAN1 oavsett aktiv WAN.</div>
   </section>
 
   <section class="card" style="margin-top:12px">
@@ -63,8 +63,8 @@ export const DASHBOARD_HTML = /* html */ `<!doctype html>
     </div>
     <div class="grid">
       <div><div class="muted">Klienter</div><div id="c_clients"></div></div>
-      <div><div class="muted">WAN latency (ms) och packet loss (%)</div><div id="c_wan"></div></div>
-      <div><div class="muted">WAN-trafik (Mbit/s)</div><div id="c_kbps"></div></div>
+      <div><div class="muted" id="l_wan">WAN latency (ms) och packet loss (%)</div><div id="c_wan"></div></div>
+      <div><div class="muted">Sammanlagd AP-uplink-trafik (Mbit/s) – närmaste mått på verklig Internettrafik</div><div id="c_kbps"></div></div>
       <div><div class="muted">TX retries 5 GHz per AP (%)</div><div id="c_retries"></div></div>
     </div>
   </section>
@@ -84,17 +84,20 @@ async function loadStatus() {
   const s = await (await fetch('/api/status')).json();
   const x = s.sample;
   if (!x) { $('asof').textContent = 'Inga mätningar ännu – vänta på första cron-körningen.'; return; }
+  $('l_wan').textContent = s.config.ispMetricsWan + ': latency (ms) och packet loss (%)';
   $('asof').textContent = 'Senaste mätning ' + dt(x.ts) + (x.connector_ok ? '' : ' · Cloud Connector svarade inte (AP-data saknas)');
   $('stale').style.display = s.stale ? 'block' : 'none';
 
-  const fiber = x.wan_uptime == null ? pill('na','ej data') : x.wan_uptime >= 99 ? pill('ok','ONLINE') : x.wan_uptime >= 50 ? pill('warn', fmt(x.wan_uptime,0,' %')) : pill('crit','OFFLINE');
+  const pfx = s.config.fiberIpPrefix;
+  const onFiber = pfx && x.wan_public_ip ? x.wan_public_ip.startsWith(pfx) : null;
   const failover = s.active.some(a => a.rule === 'wan_failover');
+  const wanLabel = s.config.ispMetricsWan;
   $('internet').innerHTML =
-    '<span>Fiber</span>'+fiber+
-    '<span>Aktiv väg</span>'+(failover ? pill('crit','5G backup') : pill('ok', x.isp_name || 'fiber'))+
-    '<span>WAN latency</span><b>'+fmt(x.wan_latency,0,' ms')+' <span class="muted">(max '+fmt(x.wan_latency_max,0)+')</span></b>'+
-    '<span>Packet loss</span><b>'+fmt(x.wan_loss,1,' %')+'</b>'+
-    '<span>Trafik nu</span><b>'+fmt(x.wan_down_kbps/1000,1)+' / '+fmt(x.wan_up_kbps/1000,1)+' Mbit/s</b>'+
+    '<span>Aktiv väg</span>'+(failover || onFiber === false ? pill('crit','5G backup') : onFiber ? pill('ok','Fiber') : pill('na','okänd'))+
+    '<span>'+wanLabel+' uptime</span><b>'+fmt(x.wan_uptime,0,' %')+'</b>'+
+    '<span>'+wanLabel+' latency</span><b>'+fmt(x.wan_latency,0,' ms')+' <span class="muted">(max '+fmt(x.wan_latency_max,0)+')</span></b>'+
+    '<span>'+wanLabel+' packet loss</span><b>'+fmt(x.wan_loss,1,' %')+'</b>'+
+    '<span>Abonnerad hastighet ('+(x.isp_name||'?')+')</span><b>'+fmt(x.wan_down_kbps/1000,0)+' / '+fmt(x.wan_up_kbps/1000,0)+' Mbit/s</b>'+
     '<span>Failovers 24 h</span><b>'+s.failovers24h+'</b>'+
     '<span>Publik IP</span><b>'+(x.wan_public_ip||'<span class="muted">–</span>')+(s.ipChanges24h?' <span class="muted">('+s.ipChanges24h+' byten 24 h)</span>':'')+'</b>';
 
@@ -159,9 +162,10 @@ async function loadSeries(range) {
     { name:'Latency ms', color:palette[0], pts: w.map(r=>({x:r.t, y:r.latency})) },
     { name:'Loss % (höger)', color:palette[4], right:true, pts: w.map(r=>({x:r.t, y:r.loss})) },
   ], {days, right:true, maxR:10});
+  const upl = {};
+  for (const r of s.aps) if (r.uplink_bps != null) upl[r.t] = (upl[r.t] ?? 0) + r.uplink_bps;
   $('c_kbps').innerHTML = chart([
-    { name:'Ned', color:palette[0], pts: w.map(r=>({x:r.t, y:r.down_kbps==null?null:r.down_kbps/1000})) },
-    { name:'Upp', color:palette[2], pts: w.map(r=>({x:r.t, y:r.up_kbps==null?null:r.up_kbps/1000})) },
+    { name:'Alla AP, rx+tx', color:palette[0], pts: Object.entries(upl).map(([t,b])=>({x:+t, y:b/1e6})) },
   ], {days});
   const byAp = {};
   for (const r of s.aps) (byAp[r.ap_name] ??= []).push({x:r.t, y:r.retries_5g});

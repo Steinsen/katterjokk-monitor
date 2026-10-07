@@ -17,8 +17,7 @@ export interface Env {
   THRESH_LATENCY_MS: string;
   THRESH_RETRIES_PCT: string;
   THRESH_DHCP_PCT: string;
-  SILENT_MIN_CLIENTS: string;
-  SILENT_MAX_KBPS: string;
+  ISP_METRICS_WAN: string;
   SKEW_FACTOR: string;
   SKEW_MIN_CLIENTS: string;
   RETENTION_DAYS: string;
@@ -78,8 +77,6 @@ export interface Thresholds {
   latencyMs: number;
   retriesPct: number;
   dhcpPct: number;
-  silentMinClients: number;
-  silentMaxKbps: number;
   skewFactor: number;
   skewMinClients: number;
   fiberAsn: string;
@@ -114,8 +111,6 @@ export function thresholdsFromEnv(env: Env): Thresholds {
     latencyMs: n(env.THRESH_LATENCY_MS, 100),
     retriesPct: n(env.THRESH_RETRIES_PCT, 20),
     dhcpPct: n(env.THRESH_DHCP_PCT, 80),
-    silentMinClients: n(env.SILENT_MIN_CLIENTS, 20),
-    silentMaxKbps: n(env.SILENT_MAX_KBPS, 500),
     skewFactor: n(env.SKEW_FACTOR, 2.5),
     skewMinClients: n(env.SKEW_MIN_CLIENTS, 25),
     fiberAsn: env.FIBER_ASN ?? "",

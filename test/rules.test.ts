@@ -5,7 +5,7 @@ import type { AlertState, ApSample, Sample, Snapshot, Thresholds } from "../src/
 
 const T: Thresholds = {
   lossPct: 5, latencyMs: 100, retriesPct: 20, dhcpPct: 80,
-  silentMinClients: 20, silentMaxKbps: 500, skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345", backupIspMatch: "Telia Mobile", fiberIpPrefix: "198.51.",
+  skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345", backupIspMatch: "Telia Mobile", fiberIpPrefix: "198.51.",
 };
 
 const sample = (o: Partial<Sample> = {}): Sample => ({
@@ -52,13 +52,6 @@ test("failover-regeln är helt av utan någon av de tre signalerna", () => {
 test("null-värden bryter aldrig en tröskel", () => {
   const v = evaluate(snap({ wan_loss: null, wan_latency: null, wan_uptime: null, clients_guest_vlan: null }, [ap("A", { retries_5g: null, state: null })]), T);
   assert.deepEqual(v, []);
-});
-
-test("wan_silent: många klienter, ingen trafik, fiber uppe", () => {
-  const v = evaluate(snap({ clients_total: 40, wan_down_kbps: 100, wan_up_kbps: 50 }), T);
-  assert.ok(v.some((x) => x.rule === "wan_silent"));
-  // nattetid med få klienter → inget
-  assert.ok(!evaluate(snap({ clients_total: 5, wan_down_kbps: 0, wan_up_kbps: 0 }), T).some((x) => x.rule === "wan_silent"));
 });
 
 test("ap_skew kräver både faktor och absolut antal", () => {

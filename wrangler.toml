@@ -36,6 +36,8 @@ GUEST_SUBNET = "192.168.30."
 BACKUP_ISP_MATCH = "Telia Mobile"
 FIBER_ASN = ""
 FIBER_IP_PREFIX = "5.250."
+# Vilken WAN UniFi:s isp-metrics mäter. UniFi rapporterar WAN1, inte aktiv WAN. Visas i dashboarden.
+ISP_METRICS_WAN = "WAN1 – Telia 5G (backup)"
 AP_MODEL_PREFIX = "U7"  # vilka devices som räknas som AP
 
 # Trösklar
@@ -43,8 +45,6 @@ THRESH_LOSS_PCT = "5"
 THRESH_LATENCY_MS = "100"
 THRESH_RETRIES_PCT = "20"
 THRESH_DHCP_PCT = "80"
-SILENT_MIN_CLIENTS = "20"
-SILENT_MAX_KBPS = "500"
 SKEW_FACTOR = "2.5"
 SKEW_MIN_CLIENTS = "25"
 RETENTION_DAYS = "90"
