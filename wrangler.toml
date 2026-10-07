@@ -23,12 +23,25 @@ database_id = "ac74d195-fada-4f35-b927-f20fc93c40a1"
 
 [vars]
 # Identiteter – öppna https://<worker>.workers.dev/setup så listas de (sidan är aktiv tills NET_SITE_ID är satt)
-HOST_ID = ""            # Site Manager host id, GET https://api.ui.com/v1/hosts
-SM_SITE_ID = ""         # siteId, GET https://api.ui.com/v1/sites
-NET_SITE_ID = ""        # id, connector .../network/integration/v1/sites
-GUEST_NETWORK_ID = ""   # id för VLAN 30-nätet, .../networks
+HOST_ID = "6C63F8328EC90000000008F45C8300000000096EC9F00000000067F62E7C"            # Site Manager host id, GET https://api.ui.com/v1/hosts
+SM_SITE_ID = "69922ffe44486445abe89d45"         # siteId, GET https://api.ui.com/v1/sites
+NET_SITE_ID = "88f7af54-98f8-306a-a1c7-c9349722b1f6"        # id, connector .../network/integration/v1/sites
+GUEST_NETWORK_ID = "1fd7de89-a176-48d6-bbf6-e7a0e8271019"   # id för VLAN 30-nätet, .../networks
 GUEST_SUBNET = "192.168.30."
-FIBER_ASN = ""          # ispAsn i första isp-metrics-svaret över fiber. Tomt = failover-regeln av.
+FIBER_ASN = "{
+  "metricTime": "2026-10-07T06:55:00Z",
+  "FIBER_ASN": "3301",
+  "isp": "Telia Mobile",
+  "avgLatency": 37,
+  "download_kbps": 300000,
+  "downtime": 0,
+  "ispAsn": "3301",
+  "ispName": "Telia Mobile",
+  "maxLatency": 39,
+  "packetLoss": 0,
+  "upload_kbps": 30000,
+  "uptime": 100
+}"          # ispAsn i första isp-metrics-svaret över fiber. Tomt = failover-regeln av.
 AP_MODEL_PREFIX = "U7"  # vilka devices som räknas som AP
 
 # Trösklar
