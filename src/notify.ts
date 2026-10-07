@@ -6,10 +6,17 @@ import type { AlertChange, Env } from "./types.ts";
  * Fungerar direkt med ntfy (https://ntfy.sh/<topic>): body = text, Title/Priority som headers.
  * För andra webhookar (Pushover, Slack, Discord) – byt body-format här; resten påverkas inte.
  */
-export async function notify(env: Env, change: AlertChange): Promise<void> {
+export interface NotifyResult {
+  delivered: boolean;
+  status: number | null;
+  response: string | null;
+  error?: string;
+}
+
+export async function notify(env: Env, change: AlertChange): Promise<NotifyResult> {
   if (!env.ALERT_WEBHOOK) {
     console.log("notify (no webhook):", formatNotification(change));
-    return;
+    return { delivered: false, status: null, response: null, error: "ALERT_WEBHOOK saknas" };
   }
   const prio = change.state === "resolved" ? "default" : change.severity === "critical" ? "urgent" : "high";
   const title = change.state === "resolved" ? `Katterjåkk: ${change.rule} OK` : `Katterjåkk ${change.severity.toUpperCase()}: ${change.rule}`;
@@ -25,8 +32,11 @@ export async function notify(env: Env, change: AlertChange): Promise<void> {
       body: formatNotification(change),
       signal: AbortSignal.timeout(10_000),
     });
-    if (!r.ok) console.warn("notify failed", r.status, await r.text());
+    const body = await r.text();
+    if (!r.ok) console.warn("notify failed", r.status, body);
+    return { delivered: r.ok, status: r.status, response: body.slice(0, 500) };
   } catch (e) {
     console.warn("notify error", String(e));
+    return { delivered: false, status: null, response: null, error: String(e) };
   }
 }

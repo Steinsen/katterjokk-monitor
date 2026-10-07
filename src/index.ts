@@ -98,10 +98,12 @@ export default {
             message: url.searchParams.get("msg") ?? "Testlarm från Katterjåkk Network Monitor",
             ts: Math.floor(Date.now() / 1000),
           };
-          await notify(env, change);
+          const result = await notify(env, change);
           await env.DB.prepare("INSERT INTO events (ts, severity, rule, subject, state, message) VALUES (?,?,?,?,?,?)")
             .bind(change.ts, change.severity, change.rule, change.subject, change.state, change.message).run();
-          return json({ sent: Boolean(env.ALERT_WEBHOOK), webhookConfigured: Boolean(env.ALERT_WEBHOOK), change });
+          let webhookHost: string | null = null;
+          try { webhookHost = env.ALERT_WEBHOOK ? new URL(env.ALERT_WEBHOOK).host : null; } catch { webhookHost = "ogiltig URL"; }
+          return json({ webhookConfigured: Boolean(env.ALERT_WEBHOOK), webhookHost, ...result, change });
         }
         case "/api/poll":
           // Manuell körning (skyddad av Cloudflare Access precis som resten).
