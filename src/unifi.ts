@@ -111,9 +111,11 @@ export async function collect(env: Env, nowMs = Date.now()): Promise<Snapshot> {
   const prefix = env.AP_MODEL_PREFIX || "U7";
   const aps = devices.filter((d) => typeof d.model === "string" && d.model.startsWith(prefix));
 
-  const statsR = await Promise.allSettled(
-    aps.map((ap) => net(env, `/sites/${site}/devices/${ap.id}/statistics/latest`)),
-  );
+  // Listan ger bara grunddata; kanal/bredd per radio finns i detaljanropet. Statistik i ett eget.
+  const [statsR, detailR] = await Promise.all([
+    Promise.allSettled(aps.map((ap) => net(env, `/sites/${site}/devices/${ap.id}/statistics/latest`))),
+    Promise.allSettled(aps.map((ap) => net(env, `/sites/${site}/devices/${ap.id}`))),
+  ]);
 
   const smSite = ok(sitesR)?.data?.find((s: any) => s.siteId === env.SM_SITE_ID);
   const wan = latestIspPeriod(ok(ispR), env.SM_SITE_ID)?.data?.wan;
@@ -154,15 +156,17 @@ export async function collect(env: Env, nowMs = Date.now()): Promise<Snapshot> {
 
   const apSamples: ApSample[] = aps.map((ap, i) => {
     const st = ok(statsR[i]);
-    const r2 = radio(ap.interfaces?.radios, 2.4);
-    const r5 = radio(ap.interfaces?.radios, 5);
+    const det = ok(detailR[i]);
+    const radios = det?.interfaces?.radios ?? ap.interfaces?.radios;
+    const r2 = radio(radios, 2.4);
+    const r5 = radio(radios, 5);
     const s2 = radio(st?.interfaces?.radios, 2.4);
     const s5 = radio(st?.interfaces?.radios, 5);
     return {
       ts,
       ap_id: String(ap.id),
       ap_name: String(ap.name ?? ap.macAddress ?? ap.id),
-      state: ap.state ?? null,
+      state: det?.state ?? ap.state ?? null,
       clients: perAp.get(ap.id) ?? 0,
       ch_2g: num(r2?.channel),
       width_2g: num(r2?.channelWidthMHz),
