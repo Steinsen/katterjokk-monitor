@@ -2,12 +2,20 @@ import { DASHBOARD_HTML } from "./dashboard.ts";
 import * as db from "./db.ts";
 import { notify } from "./notify.ts";
 import { evaluate, step } from "./rules.ts";
+import { setupHtml } from "./setup.ts";
 import { thresholdsFromEnv, type Env } from "./types.ts";
-import { backfillIsp, collect } from "./unifi.ts";
+import { backfillIsp, collect, discover } from "./unifi.ts";
 
 const CLEANUP_CRON = "17 3 * * *";
 
+const configured = (env: Env) => Boolean(env.HOST_ID && env.SM_SITE_ID && env.NET_SITE_ID);
+
 async function poll(env: Env, ctx: ExecutionContext) {
+  if (!configured(env)) {
+    console.warn("poll skipped: HOST_ID/SM_SITE_ID/NET_SITE_ID saknas i wrangler.toml – öppna /setup");
+    return;
+  }
+  await db.ensureSchema(env.DB);
   const snap = await collect(env);
 
   // Första körningen: hämta 30 dagars WAN-historik så graferna inte börjar tomma.
@@ -39,6 +47,7 @@ const json = (data: unknown, status = 200) =>
 export default {
   async scheduled(ctrl: ScheduledController, env: Env, ctx: ExecutionContext) {
     if (ctrl.cron === CLEANUP_CRON) {
+      await db.ensureSchema(env.DB);
       await db.cleanup(env.DB, Number(env.RETENTION_DAYS) || 90);
       return;
     }
@@ -48,6 +57,14 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     try {
+      // Setup-sidan: bara tills id:na är ifyllda, så att den inte ligger kvar öppen i onödan.
+      if (url.pathname === "/setup") {
+        if (configured(env)) return json({ error: "not found" }, 404);
+        const data = await discover(env);
+        if (url.searchParams.get("format") === "json") return json(data);
+        return new Response(setupHtml(data, false), { headers: { "content-type": "text/html; charset=utf-8" } });
+      }
+      if (url.pathname.startsWith("/api/")) await db.ensureSchema(env.DB);
       switch (url.pathname) {
         case "/api/status":
           return json(await db.latest(env.DB));

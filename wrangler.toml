@@ -6,6 +6,12 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
+# Gör att schema.sql kan importeras som text och köras av Worker:n själv.
+[[rules]]
+type = "Text"
+globs = ["**/*.sql"]
+fallthrough = true
+
 [triggers]
 # var 5:e minut: poll + larm. 03:17: städning av rader > RETENTION_DAYS.
 crons = ["*/5 * * * *", "17 3 * * *"]
@@ -16,7 +22,7 @@ database_name = "katterjokk-monitor"
 database_id = "ac74d195-fada-4f35-b927-f20fc93c40a1"
 
 [vars]
-# Identiteter – hämta med scripts/discover.sh
+# Identiteter – öppna https://<worker>.workers.dev/setup så listas de (sidan är aktiv tills NET_SITE_ID är satt)
 HOST_ID = ""            # Site Manager host id, GET https://api.ui.com/v1/hosts
 SM_SITE_ID = ""         # siteId, GET https://api.ui.com/v1/sites
 NET_SITE_ID = ""        # id, connector .../network/integration/v1/sites

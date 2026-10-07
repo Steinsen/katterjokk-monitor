@@ -172,6 +172,55 @@ export function poolSize(network: any): number | null {
   return n > 0 ? n : null;
 }
 
+/**
+ * Setup-hjälp: allt som behövs för [vars] i wrangler.toml, i ett anrop.
+ * Används av /setup tills NET_SITE_ID är satt. Inget här är hemligt.
+ */
+export async function discover(env: Env) {
+  const out: Record<string, any> = {};
+  const hosts = await sm(env, "/hosts").catch((e) => ({ error: String(e) }));
+  out.hosts = (hosts.data ?? []).map((h: any) => ({
+    HOST_ID: h.id, type: h.type, ip: h.ipAddress, owner: h.owner,
+    connected: h.reportedState?.state ?? h.userData?.consoleGroupMembers?.[0]?.roleAttributes?.connectedState ?? null,
+  }));
+  if (hosts.error) out.hosts_error = hosts.error;
+
+  const sites = await sm(env, "/sites").catch((e) => ({ error: String(e) }));
+  out.sites = (sites.data ?? []).map((s: any) => ({
+    SM_SITE_ID: s.siteId, name: s.meta?.desc, hostId: s.hostId,
+    wifiClients: s.statistics?.counts?.wifiClient, wifiDevices: s.statistics?.counts?.wifiDevice,
+    wanUptime: s.statistics?.percentages?.wanUptime, isp: s.statistics?.ispInfo?.name,
+  }));
+  if (sites.error) out.sites_error = sites.error;
+
+  const isp = await sm(env, "/isp-metrics/5m?duration=24h").catch((e) => ({ error: String(e) }));
+  const p = latestIspPeriod(isp, env.SM_SITE_ID);
+  out.isp_now = p ? { metricTime: p.metricTime, FIBER_ASN: p.data?.wan?.ispAsn, isp: p.data?.wan?.ispName, ...p.data?.wan } : (isp.error ?? null);
+
+  const hostId = env.HOST_ID || out.hosts?.[0]?.HOST_ID;
+  if (!hostId) return out;
+  const envH = { ...env, HOST_ID: hostId };
+  const netSites = await net(envH, "/sites").catch((e) => ({ error: String(e) }));
+  out.network_sites = (netSites.data ?? []).map((s: any) => ({ NET_SITE_ID: s.id, name: s.name }));
+  if (netSites.error) {
+    out.connector_error = netSites.error;
+    out.connector_hint = "403 = API-nyckeln är inte från konsolens ägarkonto. 408 = konsolen är offline eller UniFi OS < 5.0.3.";
+    return out;
+  }
+  const netSite = env.NET_SITE_ID || netSites.data?.[0]?.id;
+  if (!netSite) return out;
+  const [networks, devices] = await Promise.all([
+    net(envH, `/sites/${netSite}/networks?limit=100`).catch((e) => ({ error: String(e) })),
+    net(envH, `/sites/${netSite}/devices?limit=100`).catch((e) => ({ error: String(e) })),
+  ]);
+  out.networks = (networks.data ?? []).map((n: any) => ({
+    GUEST_NETWORK_ID: n.id, name: n.name, vlan: n.vlanId ?? null,
+    dhcpRange: n.ipv4Configuration?.dhcpConfiguration?.ipAddressRange ?? null,
+  }));
+  out.devices = (devices.data ?? []).map((d: any) => ({ model: d.model, name: d.name, state: d.state }));
+  return out;
+}
+
 /** 30 dagars WAN-historik (timupplösning) för första starten. */
 export async function backfillIsp(env: Env): Promise<Partial<Sample>[]> {
   const isp = await sm(env, "/isp-metrics/1h?duration=30d");

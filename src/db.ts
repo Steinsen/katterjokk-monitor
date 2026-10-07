@@ -1,4 +1,19 @@
-import type { AlertChange, AlertState, ApSample, Env, Sample, Snapshot } from "./types.ts";
+import schemaSql from "../schema.sql";
+import type { AlertChange, AlertState, ApSample, Sample, Snapshot } from "./types.ts";
+
+let schemaReady = false;
+
+/** Skapar tabellerna om de saknas. Körs en gång per isolat; idempotent (IF NOT EXISTS). */
+export async function ensureSchema(db: D1Database): Promise<void> {
+  if (schemaReady) return;
+  const stmts = schemaSql
+    .split(";")
+    .map((s) => s.replace(/--[^\n]*/g, "").trim())
+    .filter(Boolean)
+    .map((s) => db.prepare(s));
+  await db.batch(stmts);
+  schemaReady = true;
+}
 
 const SAMPLE_COLS: (keyof Sample)[] = [
   "ts", "source_ok", "connector_ok", "wan_uptime", "wan_latency", "wan_latency_max", "wan_loss",

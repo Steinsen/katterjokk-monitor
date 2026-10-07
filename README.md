@@ -19,26 +19,25 @@ scripts/discover.sh  hämtar id:n till wrangler.toml
 
 ## Kom igång – helt från webbläsaren
 
-Allt körs via GitHub Actions; inget behöver installeras lokalt. Förutsättning: UniFi OS ≥ 5.0.3 på UDM-SE.
+Repot är kopplat till Cloudflare Workers Builds: varje push till `main` bygger och deployar Worker:n.
+Inget körs lokalt och inga Wrangler-kommandon behövs – Worker:n skapar sina D1-tabeller själv vid första körningen.
 
-**1. Hemligheter i GitHub** – repot → Settings → Secrets and variables → Actions → New repository secret:
+**1. Cloudflare-dashboarden** (Workers & Pages → katterjokk-monitor)
+- Settings → Variables and Secrets: lägg `UNIFI_API_KEY` och `ALERT_WEBHOOK` som **Secret**.
+  Nyckeln skapas på unifi.ui.com → API → Create API Key, **från konsolens ägarkonto** (Cloud Connector fungerar inte med en nyckel från ett extra admin-konto).
+  Webhook t.ex. `https://ntfy.sh/<långt-slumpat-topic>`; prenumerera på samma topic i ntfy-appen.
+- Settings → Bindings: D1 `DB` → `katterjokk-monitor` (skapa databasen under Storage & Databases → D1 om den saknas) och se till att `database_id` i `wrangler.toml` matchar.
+- Settings → Domains & Routes: **Enable** workers.dev så att dashboarden får en adress.
 
-| Secret | Var du hämtar den |
-|---|---|
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare-dashboarden → Workers & Pages → Account ID i högerspalten |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare → My Profile → API Tokens → Create Token → mallen **Edit Cloudflare Workers**, lägg till permission **D1: Edit** |
-| `UNIFI_API_KEY` | unifi.ui.com → API → Create API Key. **Från konsolens ägarkonto** – Cloud Connector fungerar inte med en nyckel från ett extra admin-konto |
-| `ALERT_WEBHOOK` | t.ex. `https://ntfy.sh/<långt-slumpat-topic>` (installera ntfy-appen och prenumerera på samma topic) |
+**2. Öppna `https://katterjokk-monitor.<subdomän>.workers.dev/setup`.** Sidan hämtar HOST_ID, SM_SITE_ID, NET_SITE_ID,
+nätverken (ta raden med vlan 30 som GUEST_NETWORK_ID) och nuvarande ISP-ASN (FIBER_ASN) via din API-nyckel.
+Står det 403 under Cloud Connector är nyckeln från fel konto; 408 betyder att konsolen är offline eller har UniFi OS < 5.0.3.
 
-**2. Hämta id:n** – Actions-fliken → *Discover* → Run workflow. Öppna loggen: den listar HOST_ID, SM_SITE_ID, NET_SITE_ID, nätverken (ta raden med `vlan=30` som GUEST_NETWORK_ID), nuvarande ISP-ASN (FIBER_ASN) och skapar D1-databasen med dess `database_id`. Går connector-steget fel säger loggen varför (403 = fel konto, 408 = konsolen nere eller för gammal firmware).
+**3. Fyll i `wrangler.toml`** på GitHub (penn-ikonen) under `[vars]` och committa till `main`. Cloudflare bygger om.
+När NET_SITE_ID är satt stängs `/setup` (svarar 404) och cron börjar polla var 5:e minut. Första körningen backfyller 30 dagars WAN-historik.
 
-**3. Fyll i `wrangler.toml`** direkt på GitHub (penn-ikonen): `database_id` och de fem värdena under `[vars]`. Commit till `main`.
-
-**4. Klart.** Commiten triggar *Deploy*: typecheck, tester, schema, deploy, secrets. Första mätningen kommer inom 5 minuter; första körningen backfyller också 30 dagars WAN-historik från UniFi.
-
-Dashboarden ligger på `https://katterjokk-monitor.<ditt-subdomän>.workers.dev` (adressen syns i Cloudflare → Workers & Pages → katterjokk-monitor).
-
-Ändrar du en tröskel i `wrangler.toml` eller koden räcker det att committa till `main` igen.
+Ändrar du en tröskel i `wrangler.toml` räcker det att committa igen. OBS: `wrangler deploy` skriver över *variabler* med dem i `wrangler.toml`,
+men rör inte *secrets* – så håll icke-hemliga värden i filen och hemligheter i dashboarden.
 
 ### Provköra lokalt (valfritt, om du har en maskin där det går)
 
@@ -53,7 +52,7 @@ open http://localhost:8787
 ### Skydda dashboarden
 
 Worker:n har ingen egen inloggning. Lägg `katterjokk-monitor.<konto>.workers.dev` bakom **Cloudflare Access**
-(Zero Trust → Access → Applications → Self-hosted, policy: Allow e-post = din). Gratis upp till 50 användare.
+(Zero Trust → Access → Applications → Self-hosted, policy: Allow e-post = din; eller Worker-sidans flik **Access** → Enable). Gratis upp till 50 användare.
 Gör det innan du delar länken; fram till dess är dashboarden publik (den innehåller inga hemligheter, men AP-namn och klientantal).
 
 ## Larm
