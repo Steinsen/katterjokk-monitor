@@ -4,7 +4,7 @@ import { notify } from "./notify.ts";
 import { evaluate, step } from "./rules.ts";
 import { setupHtml } from "./setup.ts";
 import { thresholdsFromEnv, type Env } from "./types.ts";
-import { backfillIsp, collect, discover } from "./unifi.ts";
+import { backfillIsp, collect, discover, rawIspMetrics } from "./unifi.ts";
 
 const CLEANUP_CRON = "17 3 * * *";
 
@@ -75,6 +75,9 @@ export default {
         }
         case "/api/events":
           return json(await db.events(env.DB, 100));
+        case "/api/raw/isp":
+          // Felsökning: exakt vad UniFi:s isp-metrics returnerar (alla entries, alla fält).
+          return json(await rawIspMetrics(env, url.searchParams.get("type") === "1h" ? "1h" : "5m"));
         case "/api/poll":
           // Manuell körning (skyddad av Cloudflare Access precis som resten).
           if (req.method !== "POST") return json({ error: "POST" }, 405);

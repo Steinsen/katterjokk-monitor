@@ -223,6 +223,10 @@ export async function discover(env: Env) {
   return out;
 }
 
+/** Rådata från isp-metrics, för att verifiera vilken WAN UniFi rapporterar. */
+export const rawIspMetrics = (env: Env, type: "5m" | "1h" = "5m") =>
+  sm(env, `/isp-metrics/${type}?duration=${type === "5m" ? "24h" : "7d"}`);
+
 /** 30 dagars WAN-historik (timupplösning) för första starten. */
 export async function backfillIsp(env: Env): Promise<Partial<Sample>[]> {
   const isp = await sm(env, "/isp-metrics/1h?duration=30d");

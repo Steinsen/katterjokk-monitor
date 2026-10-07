@@ -63,7 +63,7 @@ Trösklar ligger i `wrangler.toml` `[vars]`.
 | Regel | Villkor | N × 5 min | Nivå |
 |---|---|---|---|
 | wan_down | WAN uptime < 50 % | 2 | critical |
-| wan_failover | `ispName` innehåller `BACKUP_ISP_MATCH` (t.ex. "Telia Mobile"), eller `ispAsn` ≠ `FIBER_ASN` om satt | 1 | critical |
+| wan_failover | konsolens publika IP utanför `FIBER_IP_PREFIX`, eller `ispName` innehåller `BACKUP_ISP_MATCH`, eller `ispAsn` ≠ `FIBER_ASN` (de som är satta) | 1 | critical |
 | ap_offline | AP state ≠ ONLINE | 2 | critical |
 | wan_loss | packet loss > 5 % | 3 | warning |
 | wan_latency | latency > 100 ms | 3 | warning |

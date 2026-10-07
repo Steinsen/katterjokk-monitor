@@ -5,7 +5,7 @@ import type { AlertState, ApSample, Sample, Snapshot, Thresholds } from "../src/
 
 const T: Thresholds = {
   lossPct: 5, latencyMs: 100, retriesPct: 20, dhcpPct: 80,
-  silentMinClients: 20, silentMaxKbps: 500, skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345", backupIspMatch: "Telia Mobile",
+  silentMinClients: 20, silentMaxKbps: 500, skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345", backupIspMatch: "Telia Mobile", fiberIpPrefix: "198.51.",
 };
 
 const sample = (o: Partial<Sample> = {}): Sample => ({
@@ -40,8 +40,13 @@ test("failover via ISP-namn fungerar även när fiber och 5G delar ASN", () => {
   assert.ok(!evaluate(snap({ isp_asn: "3301", isp_name: "Telia Company AB" }), t).some((x) => x.rule === "wan_failover"));
 });
 
-test("failover-regeln är helt av utan FIBER_ASN och BACKUP_ISP_MATCH", () => {
-  assert.deepEqual(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile" }), { ...T, fiberAsn: "", backupIspMatch: "" }), []);
+test("failover via publik IP utanför fiberprefixet, oavsett vad ISP-metriken säger", () => {
+  const v = evaluate(snap({ wan_public_ip: "90.231.4.17", isp_name: "Azqtel", isp_asn: "12345" }), T);
+  assert.ok(v.some((x) => x.rule === "wan_failover" && /90\.231\.4\.17/.test(x.message)));
+});
+
+test("failover-regeln är helt av utan någon av de tre signalerna", () => {
+  assert.deepEqual(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile", wan_public_ip: "1.2.3.4" }), { ...T, fiberAsn: "", backupIspMatch: "", fiberIpPrefix: "" }), []);
 });
 
 test("null-värden bryter aldrig en tröskel", () => {

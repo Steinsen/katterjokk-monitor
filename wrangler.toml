@@ -31,8 +31,11 @@ GUEST_SUBNET = "192.168.30."
 # Failover-detektion (två oberoende signaler, båda valfria):
 #  - BACKUP_ISP_MATCH: delsträng i isp-metrics ispName som betyder "5G aktiv", t.ex. "Telia Mobile"
 #  - FIBER_ASN: fiberns AS-nummer; larm när ispAsn ≠ detta. Lämna tomt om fibern också är Telia (AS3301).
+#  - FIBER_IP_PREFIX: början på fiberns publika IP (konsolens IP sett från molnet). Byter konsolen IP till
+#    något utanför prefixet går trafiken via 5G. Mest robust av de tre.
 BACKUP_ISP_MATCH = "Telia Mobile"
 FIBER_ASN = ""
+FIBER_IP_PREFIX = "5.250."
 AP_MODEL_PREFIX = "U7"  # vilka devices som räknas som AP
 
 # Trösklar

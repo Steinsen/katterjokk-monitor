@@ -51,6 +51,8 @@ export const RULES: RuleDef[] = [
     check: ({ sample: s }, t) => {
       const byName = Boolean(t.backupIspMatch) && typeof s.isp_name === "string" && s.isp_name.toLowerCase().includes(t.backupIspMatch.toLowerCase());
       const byAsn = Boolean(t.fiberAsn) && Boolean(s.isp_asn) && s.isp_asn !== t.fiberAsn;
+      const byIp = Boolean(t.fiberIpPrefix) && typeof s.wan_public_ip === "string" && !s.wan_public_ip.startsWith(t.fiberIpPrefix);
+      if (byIp) return [v("wan_failover", "critical", "wan", `Konsolens publika IP är ${s.wan_public_ip} (utanför ${t.fiberIpPrefix}*) – 5G-backup aktiv`)];
       return byName || byAsn
         ? [v("wan_failover", "critical", "wan", `Trafik går via ${s.isp_name ?? "okänd ISP"} (AS${s.isp_asn ?? "?"}) – 5G-backup aktiv`)]
         : [];
