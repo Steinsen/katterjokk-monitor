@@ -8,16 +8,15 @@ export interface Env {
   NET_SITE_ID: string;
   GUEST_NETWORK_ID: string;
   GUEST_SUBNET: string;
-  FIBER_ASN: string;
-  BACKUP_ISP_MATCH?: string;
   FIBER_IP_PREFIX?: string;
+  FIBER_LABEL?: string;
+  BACKUP_LABEL?: string;
   AP_MODEL_PREFIX: string;
 
   THRESH_LOSS_PCT: string;
   THRESH_LATENCY_MS: string;
   THRESH_RETRIES_PCT: string;
   THRESH_DHCP_PCT: string;
-  ISP_METRICS_WAN: string;
   SKEW_FACTOR: string;
   SKEW_MIN_CLIENTS: string;
   RETENTION_DAYS: string;
@@ -79,8 +78,6 @@ export interface Thresholds {
   dhcpPct: number;
   skewFactor: number;
   skewMinClients: number;
-  fiberAsn: string;
-  backupIspMatch: string;
   fiberIpPrefix: string;
 }
 
@@ -113,8 +110,6 @@ export function thresholdsFromEnv(env: Env): Thresholds {
     dhcpPct: n(env.THRESH_DHCP_PCT, 80),
     skewFactor: n(env.SKEW_FACTOR, 2.5),
     skewMinClients: n(env.SKEW_MIN_CLIENTS, 25),
-    fiberAsn: env.FIBER_ASN ?? "",
-    backupIspMatch: (env.BACKUP_ISP_MATCH ?? "").trim(),
     fiberIpPrefix: (env.FIBER_IP_PREFIX ?? "").trim(),
   };
 }

@@ -5,7 +5,7 @@ import type { AlertState, ApSample, Sample, Snapshot, Thresholds } from "../src/
 
 const T: Thresholds = {
   lossPct: 5, latencyMs: 100, retriesPct: 20, dhcpPct: 80,
-  skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345", backupIspMatch: "Telia Mobile", fiberIpPrefix: "198.51.",
+  skewFactor: 2.5, skewMinClients: 25, fiberIpPrefix: "198.51.",
 };
 
 const sample = (o: Partial<Sample> = {}): Sample => ({
@@ -28,25 +28,14 @@ test("friskt nät ger inga brott", () => {
   assert.deepEqual(evaluate(snap(), T), []);
 });
 
-test("failover upptäcks via ASN-byte", () => {
-  const v = evaluate(snap({ isp_asn: "3301", isp_name: "Telia" }), T);
-  assert.equal(v.length, 1);
-  assert.equal(v[0]!.rule, "wan_failover");
-});
-
-test("failover via ISP-namn fungerar även när fiber och 5G delar ASN", () => {
-  const t = { ...T, fiberAsn: "" };
-  assert.ok(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile" }), t).some((x) => x.rule === "wan_failover"));
-  assert.ok(!evaluate(snap({ isp_asn: "3301", isp_name: "Telia Company AB" }), t).some((x) => x.rule === "wan_failover"));
-});
-
 test("failover via publik IP utanför fiberprefixet, oavsett vad ISP-metriken säger", () => {
   const v = evaluate(snap({ wan_public_ip: "90.231.4.17", isp_name: "Azqtel", isp_asn: "12345" }), T);
   assert.ok(v.some((x) => x.rule === "wan_failover" && /90\.231\.4\.17/.test(x.message)));
 });
 
-test("failover-regeln är helt av utan någon av de tre signalerna", () => {
-  assert.deepEqual(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile", wan_public_ip: "1.2.3.4" }), { ...T, fiberAsn: "", backupIspMatch: "", fiberIpPrefix: "" }), []);
+test("failover-regeln är av utan FIBER_IP_PREFIX, och ISP-namnet spelar ingen roll", () => {
+  assert.deepEqual(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile", wan_public_ip: "1.2.3.4" }), { ...T, fiberIpPrefix: "" }), []);
+  assert.deepEqual(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile", wan_public_ip: "198.51.100.7" }), T), []);
 });
 
 test("null-värden bryter aldrig en tröskel", () => {

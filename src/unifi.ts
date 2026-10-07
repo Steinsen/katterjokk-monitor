@@ -7,7 +7,7 @@
 import type { ApSample, Env, Sample, Snapshot } from "./types.ts";
 
 const SM_BASE = "https://api.ui.com/v1";
-const TIMEOUT_MS = 20_000;
+const TIMEOUT_MS = 28_000;
 
 export class UnifiError extends Error {
   constructor(public path: string, public status: number, body: string) {
@@ -221,6 +221,32 @@ export async function discover(env: Env) {
   }));
   out.devices = (devices.data ?? []).map((d: any) => ({ model: d.model, name: d.name, state: d.state }));
   return out;
+}
+
+/** Felsökning: provar varje anrop monitorn gör och rapporterar status/fel per anrop. Inga hemligheter i svaret. */
+export async function debugCalls(env: Env) {
+  const site = env.NET_SITE_ID;
+  const probe = async (name: string, fn: () => Promise<any>, pick: (r: any) => unknown) => {
+    const t0 = Date.now();
+    try {
+      const r = await fn();
+      return { call: name, ok: true, ms: Date.now() - t0, summary: pick(r) };
+    } catch (e) {
+      const err = e as UnifiError;
+      return { call: name, ok: false, ms: Date.now() - t0, status: err.status ?? null, error: String(err.message ?? e) };
+    }
+  };
+  return {
+    config: { HOST_ID: env.HOST_ID, SM_SITE_ID: env.SM_SITE_ID, NET_SITE_ID: site, GUEST_NETWORK_ID: env.GUEST_NETWORK_ID },
+    calls: [
+      await probe("GET /hosts", () => sm(env, "/hosts"), (r) => r.data?.map((h: any) => ({ id: h.id, ip: h.ipAddress, type: h.type }))),
+      await probe(`GET /hosts/${env.HOST_ID}`, () => sm(env, `/hosts/${env.HOST_ID}`), (r) => ({ id: r.data?.id, ip: r.data?.ipAddress })),
+      await probe("GET /sites", () => sm(env, "/sites"), (r) => r.data?.map((s: any) => ({ siteId: s.siteId, hostId: s.hostId, wifiClient: s.statistics?.counts?.wifiClient }))),
+      await probe("connector /sites", () => net(env, "/sites"), (r) => r.data?.map((s: any) => ({ id: s.id, name: s.name }))),
+      await probe("connector /devices", () => net(env, `/sites/${site}/devices?limit=100`), (r) => ({ count: r.data?.length, sample: r.data?.slice(0, 3).map((d: any) => ({ model: d.model, name: d.name, state: d.state })) })),
+      await probe("connector /clients", () => net(env, `/sites/${site}/clients?limit=5`), (r) => ({ totalCount: r.totalCount, sample: r.data?.slice(0, 2).map((c: any) => ({ type: c.type, ip: c.ipAddress, uplink: c.uplinkDeviceId })) })),
+    ],
+  };
 }
 
 /** Rådata från isp-metrics, för att verifiera vilken WAN UniFi rapporterar. */

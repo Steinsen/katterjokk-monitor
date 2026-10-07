@@ -4,7 +4,7 @@ import { notify } from "./notify.ts";
 import { evaluate, step } from "./rules.ts";
 import { setupHtml } from "./setup.ts";
 import { thresholdsFromEnv, type Env } from "./types.ts";
-import { backfillIsp, collect, discover, rawIspMetrics } from "./unifi.ts";
+import { backfillIsp, collect, debugCalls, discover, rawIspMetrics } from "./unifi.ts";
 
 const CLEANUP_CRON = "17 3 * * *";
 
@@ -69,7 +69,11 @@ export default {
         case "/api/status":
           return json({
             ...(await db.latest(env.DB)),
-            config: { fiberIpPrefix: env.FIBER_IP_PREFIX ?? "", ispMetricsWan: env.ISP_METRICS_WAN ?? "WAN1" },
+            config: {
+              fiberIpPrefix: env.FIBER_IP_PREFIX ?? "",
+              fiberLabel: env.FIBER_LABEL ?? "Fiber (WAN2, primär)",
+              backupLabel: env.BACKUP_LABEL ?? "5G (WAN1, backup)",
+            },
           });
         case "/api/series": {
           const r = url.searchParams.get("range");
@@ -78,6 +82,8 @@ export default {
         }
         case "/api/events":
           return json(await db.events(env.DB, 100));
+        case "/api/debug":
+          return json(await debugCalls(env));
         case "/api/raw/isp":
           // Felsökning: exakt vad UniFi:s isp-metrics returnerar (alla entries, alla fält).
           return json(await rawIspMetrics(env, url.searchParams.get("type") === "1h" ? "1h" : "5m"));

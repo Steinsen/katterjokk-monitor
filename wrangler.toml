@@ -28,16 +28,11 @@ SM_SITE_ID = "69922ffe44486445abe89d45"         # siteId, GET https://api.ui.com
 NET_SITE_ID = "88f7af54-98f8-306a-a1c7-c9349722b1f6"        # id, connector .../network/integration/v1/sites
 GUEST_NETWORK_ID = "1fd7de89-a176-48d6-bbf6-e7a0e8271019"   # id för VLAN 30-nätet, .../networks
 GUEST_SUBNET = "192.168.30."
-# Failover-detektion (två oberoende signaler, båda valfria):
-#  - BACKUP_ISP_MATCH: delsträng i isp-metrics ispName som betyder "5G aktiv", t.ex. "Telia Mobile"
-#  - FIBER_ASN: fiberns AS-nummer; larm när ispAsn ≠ detta. Lämna tomt om fibern också är Telia (AS3301).
-#  - FIBER_IP_PREFIX: början på fiberns publika IP (konsolens IP sett från molnet). Byter konsolen IP till
-#    något utanför prefixet går trafiken via 5G. Mest robust av de tre.
-BACKUP_ISP_MATCH = "Telia Mobile"
-FIBER_ASN = ""
+# Failover-detektion: konsolens publika IP (från /hosts) jämförs med fiberns prefix. UniFi:s ISP-metrik
+# följer alltid WAN1 och duger därför inte som signal.
 FIBER_IP_PREFIX = "5.250."
-# Vilken WAN UniFi:s isp-metrics mäter. UniFi rapporterar WAN1, inte aktiv WAN. Visas i dashboarden.
-ISP_METRICS_WAN = "WAN1 – Telia 5G (backup)"
+FIBER_LABEL = "Fiber – Azqtel (WAN2, primär)"
+BACKUP_LABEL = "5G – Telia Mobile (WAN1, backup)"
 AP_MODEL_PREFIX = "U7"  # vilka devices som räknas som AP
 
 # Trösklar

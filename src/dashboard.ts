@@ -84,22 +84,25 @@ async function loadStatus() {
   const s = await (await fetch('/api/status')).json();
   const x = s.sample;
   if (!x) { $('asof').textContent = 'Inga mätningar ännu – vänta på första cron-körningen.'; return; }
-  $('l_wan').textContent = s.config.ispMetricsWan + ': latency (ms) och packet loss (%)';
-  $('asof').textContent = 'Senaste mätning ' + dt(x.ts) + (x.connector_ok ? '' : ' · Cloud Connector svarade inte (AP-data saknas)');
+  $('l_wan').textContent = s.config.backupLabel + ': latency (ms) och packet loss (%)';
+  $('asof').innerHTML = 'Senaste mätning ' + dt(x.ts) + (x.connector_ok ? '' : ' · Cloud Connector svarade inte (AP-data saknas) – se <a href="/api/debug">/api/debug</a>');
   $('stale').style.display = s.stale ? 'block' : 'none';
 
   const pfx = s.config.fiberIpPrefix;
   const onFiber = pfx && x.wan_public_ip ? x.wan_public_ip.startsWith(pfx) : null;
-  const failover = s.active.some(a => a.rule === 'wan_failover');
-  const wanLabel = s.config.ispMetricsWan;
+  const fiberPill = onFiber === true ? pill('ok','AKTIV') : onFiber === false ? pill('crit','EJ AKTIV') : pill('na','okänd – ingen publik IP');
+  const backupPill = onFiber === false ? pill('crit','AKTIV (failover)') : x.wan_uptime == null ? pill('na','ej data') : x.wan_uptime >= 99 ? pill('ok','standby, online') : pill('warn','standby, uptime '+fmt(x.wan_uptime,0,' %'));
   $('internet').innerHTML =
-    '<span>Aktiv väg</span>'+(failover || onFiber === false ? pill('crit','5G backup') : onFiber ? pill('ok','Fiber') : pill('na','okänd'))+
-    '<span>'+wanLabel+' uptime</span><b>'+fmt(x.wan_uptime,0,' %')+'</b>'+
-    '<span>'+wanLabel+' latency</span><b>'+fmt(x.wan_latency,0,' ms')+' <span class="muted">(max '+fmt(x.wan_latency_max,0)+')</span></b>'+
-    '<span>'+wanLabel+' packet loss</span><b>'+fmt(x.wan_loss,1,' %')+'</b>'+
-    '<span>Abonnerad hastighet ('+(x.isp_name||'?')+')</span><b>'+fmt(x.wan_down_kbps/1000,0)+' / '+fmt(x.wan_up_kbps/1000,0)+' Mbit/s</b>'+
+    '<span style="grid-column:1/-1;font-weight:600;margin-top:2px">'+s.config.fiberLabel+'</span>'+
+    '<span>Status</span>'+fiberPill+
+    '<span>Publik IP</span><b>'+(x.wan_public_ip||'<span class="muted">–</span>')+(s.ipChanges24h?' <span class="muted">('+s.ipChanges24h+' byten 24 h)</span>':'')+'</b>'+
+    '<span>Latency / loss</span><b class="muted">ej i API:t (metriken följer WAN1)</b>'+
     '<span>Failovers 24 h</span><b>'+s.failovers24h+'</b>'+
-    '<span>Publik IP</span><b>'+(x.wan_public_ip||'<span class="muted">–</span>')+(s.ipChanges24h?' <span class="muted">('+s.ipChanges24h+' byten 24 h)</span>':'')+'</b>';
+    '<span style="grid-column:1/-1;font-weight:600;margin-top:10px">'+s.config.backupLabel+'</span>'+
+    '<span>Status</span>'+backupPill+
+    '<span>Latency</span><b>'+fmt(x.wan_latency,0,' ms')+' <span class="muted">(max '+fmt(x.wan_latency_max,0)+')</span></b>'+
+    '<span>Packet loss</span><b>'+fmt(x.wan_loss,1,' %')+'</b>'+
+    '<span>Abonnerad hastighet</span><b>'+fmt(x.wan_down_kbps/1000,0)+' / '+fmt(x.wan_up_kbps/1000,0)+' Mbit/s</b>';
 
   const dhcpPct = (x.clients_guest_vlan!=null && x.dhcp_pool_size) ? 100*x.clients_guest_vlan/x.dhcp_pool_size : null;
   $('wifi').innerHTML =
