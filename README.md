@@ -71,11 +71,22 @@ Trösklar ligger i `wrangler.toml` `[vars]`.
 | dhcp_pool | anslutna i guest-subnätet > 80 % av poolen | 2 | warning |
 | ap_skew | en AP har > 2,5× medianen och ≥ 25 klienter | 3 | warning |
 
+## Notiskanaler
+
+Alla kanaler är valfria och styrs av secrets i Cloudflare-dashboarden; larm går till alla som är konfigurerade.
+
+| Kanal | Secrets | Så får du dem |
+|---|---|---|
+| E-post (Resend, gratis 100/dag) | `RESEND_API_KEY`, `ALERT_EMAIL_TO` | resend.com → API Keys. Utan verifierad domän kan Resend bara skicka till adressen kontot är registrerat på – sätt `ALERT_EMAIL_TO` till den. |
+| Telegram (gratis) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Skriv till @BotFather → `/newbot` → token. Skicka ett meddelande till din nya bot, öppna sedan `https://api.telegram.org/bot<TOKEN>/getUpdates` och läs `chat.id`. |
+| Pushover (engångsköp) | `PUSHOVER_TOKEN`, `PUSHOVER_USER` | pushover.net → Create an Application (token) + user key på startsidan. |
+| Generisk webhook / ntfy | `ALERT_WEBHOOK` | Hela URL:en. **ntfy.sh gratis fungerar inte från Workers** – kvoten räknas per IP och Workers delar IP (429). Egen ntfy-server eller betalplan går bra. |
+
 ## Testa larmkedjan
 
 `GET /api/test-alert` skickar en testnotis till `ALERT_WEBHOOK` och loggar den under Händelser.
 Parametrar: `?severity=critical|warning|info` (default info), `?state=open|resolved`, `?msg=valfri text`.
-Svaret visar `webhookConfigured: false` om secreten saknas – då loggas notisen bara.
+Svaret listar konfigurerade kanaler och HTTP-status från var och en.
 
 ## Vad som inte finns i API:t
 

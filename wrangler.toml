@@ -44,6 +44,12 @@ SKEW_FACTOR = "2.5"
 SKEW_MIN_CLIENTS = "25"
 RETENTION_DAYS = "90"
 
-# Secrets (aldrig här, sätts med `wrangler secret put`):
-#   UNIFI_API_KEY   – Site Manager API-nyckel från konsolens ägarkonto
-#   ALERT_WEBHOOK   – t.ex. https://ntfy.sh/<hemligt-topic>
+DASHBOARD_URL = "https://katterjokk-monitor.steinsen.workers.dev"
+
+# Secrets (aldrig här – Cloudflare-dashboarden → Settings → Variables and Secrets, typ Secret).
+# Notiser skickas till ALLA kanaler som har sina secrets satta:
+#   UNIFI_API_KEY                        – Site Manager API-nyckel från konsolens ägarkonto (krävs)
+#   RESEND_API_KEY + ALERT_EMAIL_TO      – e-post via resend.com (gratis; utan egen domän bara till kontots adress)
+#   TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID – Telegram-bot
+#   PUSHOVER_TOKEN + PUSHOVER_USER       – Pushover
+#   ALERT_WEBHOOK                        – generisk POST (ntfy-format). ntfy.sh gratis ger 429 från Workers (delad IP).

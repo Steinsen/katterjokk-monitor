@@ -2,6 +2,14 @@ export interface Env {
   DB: D1Database;
   UNIFI_API_KEY: string;
   ALERT_WEBHOOK?: string;
+  RESEND_API_KEY?: string;
+  ALERT_EMAIL_TO?: string;
+  ALERT_EMAIL_FROM?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
+  PUSHOVER_TOKEN?: string;
+  PUSHOVER_USER?: string;
+  DASHBOARD_URL?: string;
 
   HOST_ID: string;
   SM_SITE_ID: string;
