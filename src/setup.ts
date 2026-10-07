@@ -19,7 +19,7 @@ ${configured ? '<p class="ok">NET_SITE_ID är satt – monitorn är konfigurerad
 <h2>2. SM_SITE_ID</h2>${err("sites_error")}${table(data.sites, ["SM_SITE_ID", "name", "wifiClients", "wifiDevices", "wanUptime", "isp"])}
 <h2>3. NET_SITE_ID (via Cloud Connector)</h2>${err("connector_error")}${data.connector_hint ? `<p class="muted">${esc(data.connector_hint)}</p>` : ""}${table(data.network_sites, ["NET_SITE_ID", "name"])}
 <h2>4. GUEST_NETWORK_ID – ta raden med vlan 30</h2>${table(data.networks, ["GUEST_NETWORK_ID", "name", "vlan", "dhcpRange"])}
-<h2>5. FIBER_ASN – kör medan fibern är aktiv</h2><pre>${esc(JSON.stringify(data.isp_now, null, 2))}</pre>
+<h2>5. FIBER_IP_PREFIX – ta början på konsolens IP under 1. HOST_ID (fiberns publika IP). ISP-metriken nedan gäller WAN1:</h2><pre>${esc(JSON.stringify(data.isp_now, null, 2))}</pre>
 <h2>Enheter (kontrollera att AP-modellerna börjar på AP_MODEL_PREFIX)</h2>${table(data.devices, ["model", "name", "state"])}
 <p class="muted">Rådata: <a href="/setup?format=json">/setup?format=json</a></p>
 </body></html>`;

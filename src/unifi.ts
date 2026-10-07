@@ -197,7 +197,7 @@ export async function discover(env: Env) {
 
   const isp = await sm(env, "/isp-metrics/5m?duration=24h").catch((e) => ({ error: String(e) }));
   const p = latestIspPeriod(isp, env.SM_SITE_ID);
-  out.isp_now = p ? { metricTime: p.metricTime, FIBER_ASN: p.data?.wan?.ispAsn, isp: p.data?.wan?.ispName, ...p.data?.wan } : (isp.error ?? null);
+  out.isp_now = p ? { metricTime: p.metricTime, note: "isp-metrics följer WAN1, inte aktiv WAN", ...p.data?.wan } : (isp.error ?? null);
 
   const hostId = env.HOST_ID || out.hosts?.[0]?.HOST_ID;
   if (!hostId) return out;

@@ -30,7 +30,7 @@ Inget körs lokalt och inga Wrangler-kommandon behövs – Worker:n skapar sina 
 - Settings → Domains & Routes: **Enable** workers.dev så att dashboarden får en adress.
 
 **2. Öppna `https://katterjokk-monitor.<subdomän>.workers.dev/setup`.** Sidan hämtar HOST_ID, SM_SITE_ID, NET_SITE_ID,
-nätverken (ta raden med vlan 30 som GUEST_NETWORK_ID) och nuvarande ISP-ASN (FIBER_ASN) via din API-nyckel.
+nätverken (ta raden med vlan 30 som GUEST_NETWORK_ID) och konsolens publika IP (FIBER_IP_PREFIX = början på fiberns IP) via din API-nyckel.
 Står det 403 under Cloud Connector är nyckeln från fel konto; 408 betyder att konsolen är offline eller har UniFi OS < 5.0.3.
 
 **3. Fyll i `wrangler.toml`** på GitHub (penn-ikonen) under `[vars]` och committa till `main`. Cloudflare bygger om.
