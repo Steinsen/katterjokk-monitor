@@ -13,7 +13,7 @@ crons = ["*/5 * * * *", "17 3 * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "katterjokk-monitor"
-database_id = "REPLACE_WITH_OUTPUT_OF_wrangler_d1_create"
+database_id = "ac74d195-fada-4f35-b927-f20fc93c40a1"
 
 [vars]
 # Identiteter – hämta med scripts/discover.sh
