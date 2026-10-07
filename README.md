@@ -17,36 +17,30 @@ schema.sql        D1-schema
 scripts/discover.sh  hämtar id:n till wrangler.toml
 ```
 
-## Kom igång
+## Kom igång – helt från webbläsaren
 
-Förutsättningar: Node 20+, ett Cloudflare-konto, UniFi OS ≥ 5.0.3 på UDM-SE.
+Allt körs via GitHub Actions; inget behöver installeras lokalt. Förutsättning: UniFi OS ≥ 5.0.3 på UDM-SE.
 
-```bash
-npm install
-npx wrangler login
+**1. Hemligheter i GitHub** – repot → Settings → Secrets and variables → Actions → New repository secret:
 
-# 1. API-nyckel: unifi.ui.com → API → Create API Key. Måste skapas från konsolens ÄGARKONTO
-#    (Cloud Connector fungerar inte med en nyckel från ett extra admin-konto).
-export UNIFI_API_KEY=...
-./scripts/discover.sh                 # skriver ut HOST_ID, SM_SITE_ID, NET_SITE_ID, GUEST_NETWORK_ID, FIBER_ASN
+| Secret | Var du hämtar den |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare-dashboarden → Workers & Pages → Account ID i högerspalten |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare → My Profile → API Tokens → Create Token → mallen **Edit Cloudflare Workers**, lägg till permission **D1: Edit** |
+| `UNIFI_API_KEY` | unifi.ui.com → API → Create API Key. **Från konsolens ägarkonto** – Cloud Connector fungerar inte med en nyckel från ett extra admin-konto |
+| `ALERT_WEBHOOK` | t.ex. `https://ntfy.sh/<långt-slumpat-topic>` (installera ntfy-appen och prenumerera på samma topic) |
 
-# 2. Fyll i [vars] i wrangler.toml med värdena ovan.
+**2. Hämta id:n** – Actions-fliken → *Discover* → Run workflow. Öppna loggen: den listar HOST_ID, SM_SITE_ID, NET_SITE_ID, nätverken (ta raden med `vlan=30` som GUEST_NETWORK_ID), nuvarande ISP-ASN (FIBER_ASN) och skapar D1-databasen med dess `database_id`. Går connector-steget fel säger loggen varför (403 = fel konto, 408 = konsolen nere eller för gammal firmware).
 
-# 3. Databas
-npx wrangler d1 create katterjokk-monitor   # klistra in database_id i wrangler.toml
-npm run db:init
+**3. Fyll i `wrangler.toml`** direkt på GitHub (penn-ikonen): `database_id` och de fem värdena under `[vars]`. Commit till `main`.
 
-# 4. Hemligheter (hamnar aldrig i repot)
-npx wrangler secret put UNIFI_API_KEY
-npx wrangler secret put ALERT_WEBHOOK       # t.ex. https://ntfy.sh/<långt-hemligt-topic>
+**4. Klart.** Commiten triggar *Deploy*: typecheck, tester, schema, deploy, secrets. Första mätningen kommer inom 5 minuter; första körningen backfyller också 30 dagars WAN-historik från UniFi.
 
-# 5. Deploy
-npm run deploy
-```
+Dashboarden ligger på `https://katterjokk-monitor.<ditt-subdomän>.workers.dev` (adressen syns i Cloudflare → Workers & Pages → katterjokk-monitor).
 
-Första cron-körningen gör backfill av 30 dagars WAN-historik från UniFi, så graferna är inte tomma från start.
+Ändrar du en tröskel i `wrangler.toml` eller koden räcker det att committa till `main` igen.
 
-### Provköra lokalt
+### Provköra lokalt (valfritt, om du har en maskin där det går)
 
 ```bash
 npm run db:init:local

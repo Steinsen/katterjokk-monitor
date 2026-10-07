@@ -1,0 +1,47 @@
+# Engångs-hjälp: hämtar id:n från UniFi och skapar D1-databasen, utan att något körs lokalt.
+# Starta från Actions-fliken → Discover → Run workflow. Resultatet står i jobbets logg
+# (id:na är inte hemliga; API-nyckeln skrivs aldrig ut).
+name: Discover
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_d1:
+        description: "Skapa D1-databasen katterjokk-monitor om den inte finns"
+        type: boolean
+        default: true
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: UniFi-id:n (klistra in i wrangler.toml [vars])
+        run: |
+          if [ -z "$UNIFI_API_KEY" ]; then echo "::error::Repo-secret UNIFI_API_KEY saknas"; exit 1; fi
+          echo "::group::UniFi discover"
+          bash scripts/discover.sh
+          echo "::endgroup::"
+
+      - name: D1-databas (database_id till wrangler.toml)
+        if: ${{ inputs.create_d1 }}
+        run: |
+          echo "::group::D1"
+          if npx wrangler d1 info katterjokk-monitor >/dev/null 2>&1; then
+            echo "Databasen finns redan:"
+          else
+            npx wrangler d1 create katterjokk-monitor
+            echo "Databasen skapad:"
+          fi
+          npx wrangler d1 info katterjokk-monitor
+          echo "::endgroup::"
