@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS samples (
   wan_up_kbps        INTEGER,
   isp_asn            TEXT,
   isp_name           TEXT,
+  wan_public_ip      TEXT,                  -- konsolens publika IP enligt /hosts
   clients_total      INTEGER,
   clients_wifi       INTEGER,
   clients_wired      INTEGER,

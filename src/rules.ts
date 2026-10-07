@@ -48,10 +48,13 @@ export const RULES: RuleDef[] = [
     rule: "wan_failover",
     severity: "critical",
     required: 1,
-    check: ({ sample: s }, t) =>
-      t.fiberAsn && s.isp_asn && s.isp_asn !== t.fiberAsn
-        ? [v("wan_failover", "critical", "wan", `Trafik går via ${s.isp_name ?? "okänd ISP"} (AS${s.isp_asn}) – 5G-backup aktiv`)]
-        : [],
+    check: ({ sample: s }, t) => {
+      const byName = Boolean(t.backupIspMatch) && typeof s.isp_name === "string" && s.isp_name.toLowerCase().includes(t.backupIspMatch.toLowerCase());
+      const byAsn = Boolean(t.fiberAsn) && Boolean(s.isp_asn) && s.isp_asn !== t.fiberAsn;
+      return byName || byAsn
+        ? [v("wan_failover", "critical", "wan", `Trafik går via ${s.isp_name ?? "okänd ISP"} (AS${s.isp_asn ?? "?"}) – 5G-backup aktiv`)]
+        : [];
+    },
   },
   {
     rule: "ap_offline",

@@ -78,12 +78,13 @@ export async function collect(env: Env, nowMs = Date.now()): Promise<Snapshot> {
   const ts = periodTs(nowMs);
   const site = env.NET_SITE_ID;
 
-  const [sitesR, ispR, devicesR, clientsR, guestNetR] = await Promise.allSettled([
+  const [sitesR, ispR, devicesR, clientsR, guestNetR, hostR] = await Promise.allSettled([
     sm(env, "/sites"),
     sm(env, "/isp-metrics/5m?duration=24h"),
     allPages<any>(env, `/sites/${site}/devices`),
     allPages<any>(env, `/sites/${site}/clients`),
     env.GUEST_NETWORK_ID ? net(env, `/sites/${site}/networks/${env.GUEST_NETWORK_ID}`) : Promise.reject(new Error("no GUEST_NETWORK_ID")),
+    sm(env, `/hosts/${env.HOST_ID}`),
   ]);
 
   for (const r of [sitesR, ispR, devicesR, clientsR]) {
@@ -122,6 +123,7 @@ export async function collect(env: Env, nowMs = Date.now()): Promise<Snapshot> {
     wan_up_kbps: num(wan?.upload_kbps),
     isp_asn: wan?.ispAsn != null ? String(wan.ispAsn) : null,
     isp_name: wan?.ispName ?? null,
+    wan_public_ip: ok(hostR)?.data?.ipAddress ?? null,
     clients_total: clientsR.status === "fulfilled" ? clients.length : num(smSite?.statistics?.counts?.wifiClient) ,
     clients_wifi: clientsR.status === "fulfilled" ? clients.filter((c) => c.type === "WIRELESS").length : null,
     clients_wired: clientsR.status === "fulfilled" ? clients.filter((c) => c.type === "WIRED").length : null,
@@ -238,5 +240,6 @@ export async function backfillIsp(env: Env): Promise<Partial<Sample>[]> {
     wan_up_kbps: num(p.data?.wan?.upload_kbps),
     isp_asn: p.data?.wan?.ispAsn != null ? String(p.data.wan.ispAsn) : null,
     isp_name: p.data?.wan?.ispName ?? null,
+    wan_public_ip: null,
   }));
 }

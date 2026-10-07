@@ -9,6 +9,7 @@ export interface Env {
   GUEST_NETWORK_ID: string;
   GUEST_SUBNET: string;
   FIBER_ASN: string;
+  BACKUP_ISP_MATCH?: string;
   AP_MODEL_PREFIX: string;
 
   THRESH_LOSS_PCT: string;
@@ -35,6 +36,7 @@ export interface Sample {
   wan_up_kbps: number | null;
   isp_asn: string | null;
   isp_name: string | null;
+  wan_public_ip: string | null;
   clients_total: number | null;
   clients_wifi: number | null;
   clients_wired: number | null;
@@ -80,6 +82,7 @@ export interface Thresholds {
   skewFactor: number;
   skewMinClients: number;
   fiberAsn: string;
+  backupIspMatch: string;
 }
 
 export interface AlertState {
@@ -114,5 +117,6 @@ export function thresholdsFromEnv(env: Env): Thresholds {
     skewFactor: n(env.SKEW_FACTOR, 2.5),
     skewMinClients: n(env.SKEW_MIN_CLIENTS, 25),
     fiberAsn: env.FIBER_ASN ?? "",
+    backupIspMatch: (env.BACKUP_ISP_MATCH ?? "").trim(),
   };
 }

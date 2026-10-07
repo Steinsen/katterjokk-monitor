@@ -28,20 +28,11 @@ SM_SITE_ID = "69922ffe44486445abe89d45"         # siteId, GET https://api.ui.com
 NET_SITE_ID = "88f7af54-98f8-306a-a1c7-c9349722b1f6"        # id, connector .../network/integration/v1/sites
 GUEST_NETWORK_ID = "1fd7de89-a176-48d6-bbf6-e7a0e8271019"   # id för VLAN 30-nätet, .../networks
 GUEST_SUBNET = "192.168.30."
-FIBER_ASN = "{
-  "metricTime": "2026-10-07T06:55:00Z",
-  "FIBER_ASN": "3301",
-  "isp": "Telia Mobile",
-  "avgLatency": 37,
-  "download_kbps": 300000,
-  "downtime": 0,
-  "ispAsn": "3301",
-  "ispName": "Telia Mobile",
-  "maxLatency": 39,
-  "packetLoss": 0,
-  "upload_kbps": 30000,
-  "uptime": 100
-}"          # ispAsn i första isp-metrics-svaret över fiber. Tomt = failover-regeln av.
+# Failover-detektion (två oberoende signaler, båda valfria):
+#  - BACKUP_ISP_MATCH: delsträng i isp-metrics ispName som betyder "5G aktiv", t.ex. "Telia Mobile"
+#  - FIBER_ASN: fiberns AS-nummer; larm när ispAsn ≠ detta. Lämna tomt om fibern också är Telia (AS3301).
+BACKUP_ISP_MATCH = "Telia Mobile"
+FIBER_ASN = ""
 AP_MODEL_PREFIX = "U7"  # vilka devices som räknas som AP
 
 # Trösklar

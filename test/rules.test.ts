@@ -5,13 +5,13 @@ import type { AlertState, ApSample, Sample, Snapshot, Thresholds } from "../src/
 
 const T: Thresholds = {
   lossPct: 5, latencyMs: 100, retriesPct: 20, dhcpPct: 80,
-  silentMinClients: 20, silentMaxKbps: 500, skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345",
+  silentMinClients: 20, silentMaxKbps: 500, skewFactor: 2.5, skewMinClients: 25, fiberAsn: "12345", backupIspMatch: "Telia Mobile",
 };
 
 const sample = (o: Partial<Sample> = {}): Sample => ({
   ts: 1_700_000_000, source_ok: 1, connector_ok: 1,
   wan_uptime: 100, wan_latency: 24, wan_latency_max: 40, wan_loss: 0,
-  wan_down_kbps: 80_000, wan_up_kbps: 20_000, isp_asn: "12345", isp_name: "Fiber AB",
+  wan_down_kbps: 80_000, wan_up_kbps: 20_000, isp_asn: "12345", isp_name: "Fiber AB", wan_public_ip: "198.51.100.7",
   clients_total: 60, clients_wifi: 55, clients_wired: 5, clients_guest_vlan: 50, dhcp_pool_size: 249,
   aps_online: 7, aps_total: 7, ...o,
 });
@@ -34,8 +34,14 @@ test("failover upptäcks via ASN-byte", () => {
   assert.equal(v[0]!.rule, "wan_failover");
 });
 
-test("failover-regeln är av utan FIBER_ASN", () => {
-  assert.deepEqual(evaluate(snap({ isp_asn: "3301" }), { ...T, fiberAsn: "" }), []);
+test("failover via ISP-namn fungerar även när fiber och 5G delar ASN", () => {
+  const t = { ...T, fiberAsn: "" };
+  assert.ok(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile" }), t).some((x) => x.rule === "wan_failover"));
+  assert.ok(!evaluate(snap({ isp_asn: "3301", isp_name: "Telia Company AB" }), t).some((x) => x.rule === "wan_failover"));
+});
+
+test("failover-regeln är helt av utan FIBER_ASN och BACKUP_ISP_MATCH", () => {
+  assert.deepEqual(evaluate(snap({ isp_asn: "3301", isp_name: "Telia Mobile" }), { ...T, fiberAsn: "", backupIspMatch: "" }), []);
 });
 
 test("null-värden bryter aldrig en tröskel", () => {

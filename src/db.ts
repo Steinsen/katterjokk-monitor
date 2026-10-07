@@ -12,12 +12,16 @@ export async function ensureSchema(db: D1Database): Promise<void> {
     .filter(Boolean)
     .map((s) => db.prepare(s));
   await db.batch(stmts);
+  // Kolumner tillagda efter första versionen – ALTER misslyckas harmlöst om de redan finns.
+  for (const sql of ["ALTER TABLE samples ADD COLUMN wan_public_ip TEXT"]) {
+    await db.prepare(sql).run().catch(() => undefined);
+  }
   schemaReady = true;
 }
 
 const SAMPLE_COLS: (keyof Sample)[] = [
   "ts", "source_ok", "connector_ok", "wan_uptime", "wan_latency", "wan_latency_max", "wan_loss",
-  "wan_down_kbps", "wan_up_kbps", "isp_asn", "isp_name", "clients_total", "clients_wifi", "clients_wired",
+  "wan_down_kbps", "wan_up_kbps", "isp_asn", "isp_name", "wan_public_ip", "clients_total", "clients_wifi", "clients_wired",
   "clients_guest_vlan", "dhcp_pool_size", "aps_online", "aps_total",
 ];
 
@@ -94,7 +98,8 @@ export async function latest(db: D1Database) {
     .bind(dayAgo)
     .first<{ n: number }>();
   const active = (await db.prepare("SELECT rule, subject, since FROM alert_state WHERE active = 1").all()).results;
-  return { sample, aps, failovers24h: fail?.n ?? 0, active, stale: !sample || Date.now() / 1000 - sample.ts > 20 * 60 };
+  const ips = (await db.prepare("SELECT COUNT(DISTINCT wan_public_ip) AS n FROM samples WHERE ts > ? AND wan_public_ip IS NOT NULL").bind(dayAgo).first<{ n: number }>())?.n ?? 0;
+  return { sample, aps, failovers24h: fail?.n ?? 0, ipChanges24h: Math.max(0, ips - 1), active, stale: !sample || Date.now() / 1000 - sample.ts > 20 * 60 };
 }
 
 export type Range = "1h" | "24h" | "7d";

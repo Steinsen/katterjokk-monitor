@@ -95,7 +95,8 @@ async function loadStatus() {
     '<span>WAN latency</span><b>'+fmt(x.wan_latency,0,' ms')+' <span class="muted">(max '+fmt(x.wan_latency_max,0)+')</span></b>'+
     '<span>Packet loss</span><b>'+fmt(x.wan_loss,1,' %')+'</b>'+
     '<span>Trafik nu</span><b>'+fmt(x.wan_down_kbps/1000,1)+' / '+fmt(x.wan_up_kbps/1000,1)+' Mbit/s</b>'+
-    '<span>Failovers 24 h</span><b>'+s.failovers24h+'</b>';
+    '<span>Failovers 24 h</span><b>'+s.failovers24h+'</b>'+
+    '<span>Publik IP</span><b>'+(x.wan_public_ip||'<span class="muted">–</span>')+(s.ipChanges24h?' <span class="muted">('+s.ipChanges24h+' byten 24 h)</span>':'')+'</b>';
 
   const dhcpPct = (x.clients_guest_vlan!=null && x.dhcp_pool_size) ? 100*x.clients_guest_vlan/x.dhcp_pool_size : null;
   $('wifi').innerHTML =
