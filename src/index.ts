@@ -87,6 +87,22 @@ export default {
         case "/api/raw/isp":
           // Felsökning: exakt vad UniFi:s isp-metrics returnerar (alla entries, alla fält).
           return json(await rawIspMetrics(env, url.searchParams.get("type") === "1h" ? "1h" : "5m"));
+        case "/api/test-alert": {
+          // Skickar en testnotis till ALERT_WEBHOOK och loggar den som info-händelse. GET räcker (lätt att öppna i mobilen).
+          const sev = url.searchParams.get("severity");
+          const change = {
+            rule: "test",
+            subject: "manuell",
+            severity: (sev === "critical" || sev === "warning" ? sev : "info") as "critical" | "warning" | "info",
+            state: (url.searchParams.get("state") === "resolved" ? "resolved" : "open") as "open" | "resolved",
+            message: url.searchParams.get("msg") ?? "Testlarm från Katterjåkk Network Monitor",
+            ts: Math.floor(Date.now() / 1000),
+          };
+          await notify(env, change);
+          await env.DB.prepare("INSERT INTO events (ts, severity, rule, subject, state, message) VALUES (?,?,?,?,?,?)")
+            .bind(change.ts, change.severity, change.rule, change.subject, change.state, change.message).run();
+          return json({ sent: Boolean(env.ALERT_WEBHOOK), webhookConfigured: Boolean(env.ALERT_WEBHOOK), change });
+        }
         case "/api/poll":
           // Manuell körning (skyddad av Cloudflare Access precis som resten).
           if (req.method !== "POST") return json({ error: "POST" }, 405);

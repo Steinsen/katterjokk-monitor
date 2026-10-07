@@ -71,6 +71,12 @@ Trösklar ligger i `wrangler.toml` `[vars]`.
 | dhcp_pool | anslutna i guest-subnätet > 80 % av poolen | 2 | warning |
 | ap_skew | en AP har > 2,5× medianen och ≥ 25 klienter | 3 | warning |
 
+## Testa larmkedjan
+
+`GET /api/test-alert` skickar en testnotis till `ALERT_WEBHOOK` och loggar den under Händelser.
+Parametrar: `?severity=critical|warning|info` (default info), `?state=open|resolved`, `?msg=valfri text`.
+Svaret visar `webhookConfigured: false` om secreten saknas – då loggas notisen bara.
+
 ## Vad som inte finns i API:t
 
 Channel utilization, WiFi Experience, signal/RSSI per klient, faktiska DHCP-leases, WAN-trafik och verklig throughput
