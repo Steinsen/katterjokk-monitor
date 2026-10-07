@@ -1,0 +1,41 @@
+name = "katterjokk-monitor"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[triggers]
+# var 5:e minut: poll + larm. 03:17: städning av rader > RETENTION_DAYS.
+crons = ["*/5 * * * *", "17 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "katterjokk-monitor"
+database_id = "REPLACE_WITH_OUTPUT_OF_wrangler_d1_create"
+
+[vars]
+# Identiteter – hämta med scripts/discover.sh
+HOST_ID = ""            # Site Manager host id, GET https://api.ui.com/v1/hosts
+SM_SITE_ID = ""         # siteId, GET https://api.ui.com/v1/sites
+NET_SITE_ID = ""        # id, connector .../network/integration/v1/sites
+GUEST_NETWORK_ID = ""   # id för VLAN 30-nätet, .../networks
+GUEST_SUBNET = "192.168.30."
+FIBER_ASN = ""          # ispAsn i första isp-metrics-svaret över fiber. Tomt = failover-regeln av.
+AP_MODEL_PREFIX = "U7"  # vilka devices som räknas som AP
+
+# Trösklar
+THRESH_LOSS_PCT = "5"
+THRESH_LATENCY_MS = "100"
+THRESH_RETRIES_PCT = "20"
+THRESH_DHCP_PCT = "80"
+SILENT_MIN_CLIENTS = "20"
+SILENT_MAX_KBPS = "500"
+SKEW_FACTOR = "2.5"
+SKEW_MIN_CLIENTS = "25"
+RETENTION_DAYS = "90"
+
+# Secrets (aldrig här, sätts med `wrangler secret put`):
+#   UNIFI_API_KEY   – Site Manager API-nyckel från konsolens ägarkonto
+#   ALERT_WEBHOOK   – t.ex. https://ntfy.sh/<hemligt-topic>
